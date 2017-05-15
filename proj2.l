@@ -67,23 +67,25 @@
 	// 	}
 	// }
 
-	void token(){
+	int token(int def){
 		LIST; 
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
 			printf("<%s>\n",yytext);
-		}	
+		}
+		return def;
 	}
 
-	void tokenKeyword(){
+	int tokenKeyword(int def){
 		LIST;
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
 			printf("<keyword:%s>\n",yytext);
 		}
+		return def;
 	}
 
-	void tokenIdentifiers(){
+	int tokenIdentifiers(int def){
 		LIST;
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
@@ -91,6 +93,7 @@
 			if (symbolTables.front().lookup(yytext)==-1){
 				symbolTables.front().insert(yytext);
 			}
+			return def;
 		}
 	} 
 	
@@ -145,67 +148,67 @@ exponent {decimal}(e|E)(\+|\-)?{integerConstants}
 realConstants {decimal}|{exponent}
 
 %%
-{comma} {token();return COMMA;}
-{colon} {token();return COLON;}
-{semicolon} {token();return SEMICOLON;}
-{left_parentheses} {token();return LEFT_PARENTHESES;}
-{right_parentheses} {token();return RIGHT_PARENTHESES;}
-{left_squarebrackets} {token();return LEFT_SQUAREBRACKETS;}
-{right_squarebrackets} {token();return RIGHT_SQUAREBRACKETS;}
-{left_brackets} {token();return LEFT_BRACKETS;}
-{right_brackets} {token();return RIGHT_BRACKETS;}
-{arithmetic_addition} {token();return ARITHMETIC_ADDITION;}
-{arithmetic_subtraction} {token();return ARITHMETIC_SUBTRACTION;}
-{arithmetic_multiplication} {token();return ARITHMETIC_MULTIPLICATION;}
-{arithmetic_divide} {token();return ARITHMETIC_DIVIDE;}
-{exponentiation} {token();return EXPONENTIATION;}
-{remainder} {token();return REMAINDER;}
-{relational_less} {token();return RELATIONAL_LESS;}
-{relational_lessEqual} {token();return RELATIONAL_LESSEQUAL;}
-{relational_greaterEqual} {token();return RELATIONAL_GREATEREQUAL;}
-{relational_greater} {token();return RELATIONAL_GREATER;}
-{relational_equal} {token();return RELATIONAL_EQUAL;}
-{relational_notEqual} {token();return RELATIONAL_NOTEQUAL;}
-{logical_and} {token();return LOGICAL_AND;}
-{logical_or} {token();return LOGICAL_OR;}
-{logical_not} {token();return LOGICAL_NOT;}
-{assignment} {token();return ASSIGNMENT;}
-{compoundOperators_addAssign} {token();return COMPOUNDOPERATORS_ADDASSIGN;}
-{compoundOperators_subAssign} {token();return COMPOUNDOPERATORS_SUBASSIGN;}
-{compoundOperators_mulAssign} {token();return COMPOUNDOPERATORS_MULASSIGN;}
-{compoundOperators_divAssign} {token();return COMPOUNDOPERATORS_DIVASSIGN;}
-{booleanConstants_true} {token();return BOOLEANCONSTANTS_TRUE;}
-{booleanConstants_false} {token();return BOOLEANCONSTANTS_FALSE;}
-"bool" {tokenKeyword(); return BOOL;}
-"break" {tokenKeyword(); return BREAK;}
-"case" {tokenKeyword(); return CASE;}
-"const" {tokenKeyword(); return CONST;}
-"continue" {tokenKeyword(); return CONTINUE;}
-"default" {tokenKeyword(); return DEFAULT;}
-"else" {tokenKeyword(); return ELSE;}
-"false" {tokenKeyword(); return FALSE;}
-"for" {tokenKeyword(); return FOR;}
-"func" {tokenKeyword(); return FUNC;}
-"go" {tokenKeyword(); return GO;}
-"if" {tokenKeyword(); return IF;}
-"import" {tokenKeyword(); return IMPORT;}
-"int" {tokenKeyword(); return INT;}
-"nil" {tokenKeyword(); return NIL;}
-"print" {tokenKeyword(); return PRINT;}
-"println" {tokenKeyword(); return PRINTLN;}
-"real" {tokenKeyword(); return REAL;}
-"return" {tokenKeyword(); return RETURN;}
-"string" {tokenKeyword(); return STRING;}
-"struct" {tokenKeyword(); return STRUCT;}
-"switch" {tokenKeyword(); return SWITCH;}
-"true" {tokenKeyword(); return TRUE;}
-"type" {tokenKeyword(); return TYPE;}
-"var" {tokenKeyword(); return VAR;}
-"void" {tokenKeyword(); return VOID;}
-"while" {tokenKeyword(); return WHILE;}
-{identifiers} {tokenIdentifiers();return IDENTIFIERS;}
-{integerConstants} {token();return INTEGERCONSTANTS;}
-{realConstants} {token();return REALCONSTANTS;}
+{comma} {return token( COMMA);}
+{colon} {return token( COLON);}
+{semicolon} {return token( SEMICOLON);}
+{left_parentheses} {return token( LEFT_PARENTHESES);}
+{right_parentheses} {return token( RIGHT_PARENTHESES);}
+{left_squarebrackets} {return token( LEFT_SQUAREBRACKETS);}
+{right_squarebrackets} {return token( RIGHT_SQUAREBRACKETS);}
+{left_brackets} {return token( LEFT_BRACKETS);}
+{right_brackets} {return token( RIGHT_BRACKETS);}
+{arithmetic_addition} {return token( ARITHMETIC_ADDITION);}
+{arithmetic_subtraction} {return token( ARITHMETIC_SUBTRACTION);}
+{arithmetic_multiplication} {return token( ARITHMETIC_MULTIPLICATION);}
+{arithmetic_divide} {return token( ARITHMETIC_DIVIDE);}
+{exponentiation} {return token( EXPONENTIATION);}
+{remainder} {return token( REMAINDER);}
+{relational_less} {return token( RELATIONAL_LESS);}
+{relational_lessEqual} {return token( RELATIONAL_LESSEQUAL);}
+{relational_greaterEqual} {return token( RELATIONAL_GREATEREQUAL);}
+{relational_greater} {return token( RELATIONAL_GREATER);}
+{relational_equal} {return token( RELATIONAL_EQUAL);}
+{relational_notEqual} {return token( RELATIONAL_NOTEQUAL);}
+{logical_and} {return token( LOGICAL_AND);}
+{logical_or} {return token( LOGICAL_OR);}
+{logical_not} {return token( LOGICAL_NOT);}
+{assignment} {return token( ASSIGNMENT);}
+{compoundOperators_addAssign} {return token( COMPOUNDOPERATORS_ADDASSIGN);}
+{compoundOperators_subAssign} {return token( COMPOUNDOPERATORS_SUBASSIGN);}
+{compoundOperators_mulAssign} {return token( COMPOUNDOPERATORS_MULASSIGN);}
+{compoundOperators_divAssign} {return token( COMPOUNDOPERATORS_DIVASSIGN);}
+{booleanConstants_true} {return token( BOOLEANCONSTANTS_TRUE);}
+{booleanConstants_false} {return token( BOOLEANCONSTANTS_FALSE);}
+"bool" {return tokenKeyword( BOOL);}
+"break" {return tokenKeyword( BREAK);}
+"case" {return tokenKeyword( CASE);}
+"const" {return tokenKeyword( CONST);}
+"continue" {return tokenKeyword( CONTINUE);}
+"default" {return tokenKeyword( DEFAULT);}
+"else" {return tokenKeyword( ELSE);}
+"false" {return tokenKeyword( FALSE);}
+"for" {return tokenKeyword( FOR);}
+"func" {return tokenKeyword( FUNC);}
+"go" {return tokenKeyword( GO);}
+"if" {return tokenKeyword( IF);}
+"import" {return tokenKeyword( IMPORT);}
+"int" {return tokenKeyword( INT);}
+"nil" {return tokenKeyword( NIL);}
+"print" {return tokenKeyword( PRINT);}
+"println" {return tokenKeyword( PRINTLN);}
+"real" {return tokenKeyword( REAL);}
+"return" {return tokenKeyword( RETURN);}
+"string" {return tokenKeyword( STRING);}
+"struct" {return tokenKeyword( STRUCT);}
+"switch" {return tokenKeyword( SWITCH);}
+"true" {return tokenKeyword( TRUE);}
+"type" {return tokenKeyword( TYPE);}
+"var" {return tokenKeyword( VAR);}
+"void" {return tokenKeyword( VOID);}
+"while" {return tokenKeyword( WHILE);}
+{identifiers} {return tokenIdentifiers( IDENTIFIERS);}
+{integerConstants} {return token( INTEGERCONSTANTS);}
+{realConstants} {return token( REALCONSTANTS);}
 
 \"			{
 				BEGIN string;

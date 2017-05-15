@@ -16,17 +16,42 @@
 %token BOOLEANCONSTANTS_TRUE BOOLEANCONSTANTS_FALSE
 %token IDENTIFIERS INTEGERCONSTANTS REALCONSTANTS STRINGCONSTANTS
 
+%start program
+
 %%
-program:        IDENTIFIERS semi
+program:            declarations
+                |   function
                 {
-                    printf("aaaaaaa\n");
                     Trace("Reducing to program\n");
                 }
                 ;
 
-semi:           SEMICOLON
+function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGHT_PARENTHESES LEFT_BRACKETS 
+                    declarations|statements 
+                    RIGHT_BRACKETS
                 {
-                    Trace("Reducing to semi\n");
+                    Trace("Reducing to function\n");
+                }
+                ;
+type:               
+                {
+                    Trace("Reducing to type\n");
+                }
+                ;
+
+declarations:   
+                {
+                    Trace("Reducing to declarations\n");
+                }
+                ;
+formal_arguments:   
+                {
+                    Trace("Reducing to formal_arguments\n");
+                }
+                ;
+statements:         
+                {
+                    Trace("Reducing to statements\n");
                 }
                 ;
 %%
@@ -38,13 +63,15 @@ void yyerror(char *msg)
 
 int main(int argc, char **argv)
 {
-    /* open the source program file */
-    // if (argc != 2) {
-    //     printf ("Usage: sc filename\n");
-    //     exit(1);
-    // }
-    // yyin = fopen(argv[1], "r");         /* open input file */
 
+    /* open the source program file */
+    if (argc != 2) {
+        printf ("Usage: sc filename\n");
+        exit(1);
+    }
+    yyin = fopen(argv[1], "r");         /* open input file */
+    hashtable one;
+    one = create();
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror("Parsing error !");     /* syntax error */
