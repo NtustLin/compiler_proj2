@@ -237,6 +237,9 @@ realConstants {decimal}|{exponent}
 \/\*		{
 				BEGIN comment;
 			}
+<comment>\n {
+				printf("%d: %s\n", linenum++, buf);
+			}
 <comment>\*\/ {
 				BEGIN 0;
 			}
