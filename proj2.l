@@ -206,6 +206,7 @@ realConstants {decimal}|{exponent}
 "var" {return tokenKeyword( VAR);}
 "void" {return tokenKeyword( VOID);}
 "while" {return tokenKeyword( WHILE);}
+"read" {return tokenKeyword( READ);}
 {identifiers} {return tokenIdentifiers( IDENTIFIERS);}
 {integerConstants} {return token( INTEGERCONSTANTS);}
 {realConstants} {return token( REALCONSTANTS);}
@@ -224,7 +225,7 @@ realConstants {decimal}|{exponent}
 				strbuf+="\"";
 				LIST;
 			}
- 
+
 <string>\n 	{
 				printf("missing terminal symbol \"\n");
 				exit(-1);

@@ -6,7 +6,7 @@
 %}
 
 /* tokens */
-%token BOOL BREAK CASE CONST CONTINUE DEFAULT ELSE FALSE FOR FUNC GO IF IMPORT INT NIL PRINT PRINTLN REAL RETURN STRING STRUCT SWITCH TRUE TYPE VAR VOID WHILE
+%token BOOL BREAK CASE CONST CONTINUE DEFAULT ELSE FALSE FOR FUNC GO IF IMPORT INT NIL PRINT PRINTLN REAL RETURN STRING STRUCT SWITCH TRUE TYPE VAR VOID WHILE READ
 %token COMMA COLON SEMICOLON LEFT_PARENTHESES RIGHT_PARENTHESES LEFT_SQUAREBRACKETS RIGHT_SQUAREBRACKETS LEFT_BRACKETS RIGHT_BRACKETS
 %token ARITHMETIC_ADDITION ARITHMETIC_SUBTRACTION ARITHMETIC_MULTIPLICATION ARITHMETIC_DIVIDE
 %token EXPONENTIATION REMAINDER
@@ -23,77 +23,129 @@
 %nonassoc NEGATIVE
 
 %%
-start:              program
-                {
+start:              program{
                     Trace("Reducing to start\n");
                 }
                 ;
- 
+
 program:            //function
-                    declarations
-                {
+                    contents{
                     Trace("Reducing to program\n");
                 }
                 ;
 
-/*function:         FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGHT_PARENTHESES LEFT_BRACKETS 
-                    declarations|statements 
-                    RIGHT_BRACKETS
-                |
-
-                {
+function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGHT_PARENTHESES LEFT_BRACKETS 
+                    contents
+                    RIGHT_BRACKETS{
                     Trace("Reducing to function\n");
                 }
-                ;*/
+                ;
 
 type:               BOOL
                 |   INT
                 |   REAL
                 |   STRING
-                {
+                |   VOID{
                     Trace("Reducing to type\n");
                 }
                 ;
 
-/*formal_arguments:   
-                {
+formal_arguments:   formal_argument COMMA formal_arguments
+                |   formal_argument{
                     Trace("Reducing to formal_arguments\n");
                 }
-                ;*/
+                ;
 
-declarations:       declaration declarations
+formal_argument:    IDENTIFIERS type{
+                    Trace("Reducing to formal_argument\n");
+                }
+                ;
+
+exp:                constant_exp{
+                    Trace("Reducing to exp\n");
+                }
+                |   function{
+                    Trace("Reducing to exp\n");
+                }
+                |   array_exp{
+                    Trace("Reducing to exp\n");
+                }
+                ;
+
+contents:           content contents
+                |   
+                {
+                    Trace("Reducing to contents\n");
+                }
+                ;
+content:            declaration
+                |   statement{
+                    Trace("Reducing to content\n");
+                }
+                ;
+
+/*statements:         statement statements
+                |
+                {
+                    Trace("Reducing to statements\n");
+                }
+                ;*/
+statement:          simple
+                // |   function_invocation
+                // |   compound
+                // |   conditional
+                // |   loop
+                // |   procedure_invocation
+                {
+                    Trace("Reducing to statement\n");
+                }
+                ;
+simple:             IDENTIFIERS ASSIGNMENT exp{
+                    Trace("Reducing to simple\n");
+                }
+                |   IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS ASSIGNMENT exp{
+                    Trace("Reducing to simple\n");
+                }
+                |   PRINT exp{
+                    Trace("Reducing to simple\n");
+                }
+                |   PRINTLN exp{
+                    Trace("Reducing to simple\n");
+                }
+                |   READ exp{
+                    Trace("Reducing to simple\n");
+                }
+                |   RETURN{
+                    Trace("Reducing to simple\n");
+                }
+                |   RETURN exp{
+                    Trace("Reducing to simple\n");
+                }
+                ;
+/*declarations:       declaration declarations
+                |
                 {
                     Trace("Reducing to declarations\n");
                 }
-                |   declaration
-                {
-                    Trace("Reducing to declarations\n");
-                }
-                ; 
-declaration:        constant
-                {
+                ;*/
+declaration:        constant{
                     Trace("Reducing to declaration\n");
                 }
-                |   variable
-                {
+                |   variable{
                     Trace("Reducing to declaration\n");
                 }
-                |   arrays
-                {
+                |   array{
                     Trace("Reducing to declaration\n");
                 }
                 ;
-constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp
-                {
+constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp{
                     Trace("Reducing to constant\n");
                 }
                 ;
-variable:           VAR IDENTIFIERS type ASSIGNMENT constant_exp
-                {
+variable:           VAR IDENTIFIERS type ASSIGNMENT constant_exp{
                     Trace("Reducing to variable\n");
                 }
-                |   VAR IDENTIFIERS type
-                {
+                |   VAR IDENTIFIERS type{
                     Trace("Reducing to variable\n");
                 }
                 ;
@@ -121,21 +173,21 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES
                 |   bool_exp LOGICAL_AND bool_exp
                 |   bool_exp LOGICAL_OR bool_exp
                 |   LOGICAL_NOT bool_exp
-                |   BOOLEANCONSTANTS_TRUE
-                {
+                |   BOOLEANCONSTANTS_TRUE{
                     Trace("Reducing to bool_exp\n");
                 }
-                |   BOOLEANCONSTANTS_FALSE
-                {
+                |   BOOLEANCONSTANTS_FALSE{
+                    Trace("Reducing to bool_exp\n");
+                }
+                |   IDENTIFIERS{
                     Trace("Reducing to bool_exp\n");
                 }
                 ;
-num_exp:            int_exp
-                {
+
+num_exp:            int_exp{
                     Trace("Reducing to num_exp\n");
                 }
-                |   real_exp
-                {
+                |   real_exp{
                     Trace("Reducing to num_exp\n");
                 }
                 ;
@@ -144,16 +196,13 @@ int_exp:            LEFT_PARENTHESES int_exp RIGHT_PARENTHESES
                 |   int_exp ARITHMETIC_SUBTRACTION int_exp
                 |   int_exp ARITHMETIC_MULTIPLICATION int_exp
                 |   int_exp ARITHMETIC_DIVIDE int_exp
-                |   ARITHMETIC_ADDITION int_exp %prec POSITIVE
-                {
+                |   ARITHMETIC_ADDITION int_exp %prec POSITIVE{
                     Trace("Reducing to int_exp\n");
                 }
-                |   ARITHMETIC_SUBTRACTION int_exp %prec NEGATIVE
-                {
+                |   ARITHMETIC_SUBTRACTION int_exp %prec NEGATIVE{
                     Trace("Reducing to int_exp\n");
                 }
-                |   INTEGERCONSTANTS
-                {
+                |   INTEGERCONSTANTS{
                     Trace("Reducing to int_exp\n");
                 }
                 |   IDENTIFIERS{
@@ -166,38 +215,40 @@ real_exp:           LEFT_PARENTHESES real_exp RIGHT_PARENTHESES
                 |   real_exp ARITHMETIC_SUBTRACTION real_exp
                 |   real_exp ARITHMETIC_MULTIPLICATION real_exp
                 |   real_exp ARITHMETIC_DIVIDE real_exp
-                |   ARITHMETIC_ADDITION real_exp %prec POSITIVE
-                {
+                |   ARITHMETIC_ADDITION real_exp %prec POSITIVE{
                     Trace("Reducing to real_exp\n");
                 }
-                |   ARITHMETIC_SUBTRACTION real_exp %prec NEGATIVE
-                {
+                |   ARITHMETIC_SUBTRACTION real_exp %prec NEGATIVE{
                     Trace("Reducing to real_exp\n");
                 }
-                |   REALCONSTANTS
-                {
+                |   REALCONSTANTS{
                     Trace("Reducing to real_exp\n");
                 }
                 |   IDENTIFIERS{
                     Trace("Reducing to constant_exp\n");
                 }
                 ;
-/*statements:       simple
-                |   compound
-                |   conditional
-                |   loop
-                |   procedure_invocation
-                {
-                    Trace("Reducing to statements\n");
-                }
-                ;*/
 
-arrays:             VAR IDENTIFIERS LEFT_SQUAREBRACKETS constant_exp RIGHT_SQUAREBRACKETS type
-                {
-                    Trace("Reducing to arrays\n");
+array:              VAR IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS type{
+                    Trace("Reducing to array\n");
                 }
                 ;
 
+array_exp:          LEFT_PARENTHESES array_exp RIGHT_PARENTHESES
+                |   array_exp ARITHMETIC_ADDITION array_exp
+                |   array_exp ARITHMETIC_SUBTRACTION array_exp
+                |   array_exp ARITHMETIC_MULTIPLICATION array_exp
+                |   array_exp ARITHMETIC_DIVIDE array_exp
+                |   ARITHMETIC_ADDITION array_exp %prec POSITIVE{
+                    Trace("Reducing to array_exp\n");
+                }
+                |   ARITHMETIC_SUBTRACTION array_exp %prec NEGATIVE{
+                    Trace("Reducing to array_exp\n");
+                }
+                |   IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS{
+                    Trace("Reducing to array_exp\n");
+                }
+                ;
 %%
 
 void yyerror(char *msg)
