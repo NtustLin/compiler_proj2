@@ -224,7 +224,7 @@ realConstants {decimal}|{exponent}
 				strbuf+="\"";
 				LIST;
 			}
-
+ 
 <string>\n 	{
 				printf("missing terminal symbol \"\n");
 				exit(-1);

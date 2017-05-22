@@ -28,7 +28,7 @@ start:              program
                     Trace("Reducing to start\n");
                 }
                 ;
-
+ 
 program:            //function
                     declarations
                 {
