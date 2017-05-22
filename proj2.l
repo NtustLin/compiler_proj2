@@ -71,7 +71,7 @@
 		LIST; 
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
-			printf("<%s>\n",yytext);
+			// printf("<%s>\n",yytext);
 		}
 		return def;
 	}
@@ -80,7 +80,7 @@
 		LIST;
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
-			printf("<keyword:%s>\n",yytext);
+			// printf("<keyword:%s>\n",yytext);
 		}
 		return def;
 	}
@@ -89,7 +89,7 @@
 		LIST;
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
-			printf("<id:%s>\n",yytext);
+			// printf("<id:%s>\n",yytext);
 			if (symbolTables.front().lookup(yytext)==-1){
 				symbolTables.front().insert(yytext);
 			}
@@ -240,7 +240,7 @@ realConstants {decimal}|{exponent}
 				BEGIN 0;
 			}
 <comment>.	{}
-\/\/.*\n {}
+\/\/.*\n {printf("%d:%s\n", linenum++, buf);}
 
 [ \t]* {LIST;}
 \n {
