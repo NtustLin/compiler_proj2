@@ -33,12 +33,12 @@ programs:           program programs
                     Trace("Reducing to programs\n");
                 }
                 ;
-program:            //functions
-                    declarations{
+program:            functions
+                |   contents{
                     Trace("Reducing to program\n");
                 }
                 ;
-/*functions:          function functions
+functions:          function functions
                 |   
                 {
                     Trace("Reducing to functions\n");
@@ -47,7 +47,7 @@ program:            //functions
 function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGHT_PARENTHESES compound{
                     Trace("Reducing to function\n");
                 }
-                ;*/
+                ;
 
 type:               BOOL
                 |   INT
@@ -58,18 +58,18 @@ type:               BOOL
                 }
                 ;
 
-/*formal_arguments:   formal_argument COMMA formal_arguments
+formal_arguments:   formal_argument COMMA formal_arguments
                 |   formal_argument
                 |
                 {
                     Trace("Reducing to formal_arguments\n");
                 }
-                ;*/
+                ;
 
-/*formal_argument:    IDENTIFIERS type{
+formal_argument:    IDENTIFIERS type{
                     Trace("Reducing to formal_argument\n");
                 }
-                ;*/
+                ;
 
 exp:                num_exp{
                     Trace("Reducing to exp\n");
@@ -81,28 +81,18 @@ exp:                num_exp{
                     Trace("Reducing to exp\n");
                 }
                 ;
-//have to be change when you are doing type verify
-constant_exp:       exp
-                {
-                    Trace("Reducing to exp\n");
-                }
-                ;
-/*compound:           LEFT_BRACKETS contents RIGHT_BRACKETS
-                {
-                    Trace("Reducing to compound\n");
-                }
-                ;*/
-/*contents:           content contents
+
+contents:           content contents
                 |   
                 {
                     Trace("Reducing to contents\n");
                 }
-                ;*/
-/*content:            declaration
+                ;
+content:            declaration
                 |   statement{
                     Trace("Reducing to content\n");
                 }
-                ;*/
+                ;
 
 /*statements:         statement statements
                 |
@@ -110,16 +100,16 @@ constant_exp:       exp
                     Trace("Reducing to statements\n");
                 }
                 ;*/
-/*statement:          simple
+statement:          simple
                 |   compound
-                // |   conditional
-                // |   loop
-                // |   procedure_invocation
+                |   conditional
+                |   loop
+                |   procedure_invocation
                 {
                     Trace("Reducing to statement\n");
                 }
-                ;*/
-/*simple:             IDENTIFIERS ASSIGNMENT exp{
+                ;
+simple:             IDENTIFIERS ASSIGNMENT exp{
                     Trace("Reducing to simple\n");
                 }
                 |   IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS ASSIGNMENT exp{
@@ -140,13 +130,45 @@ constant_exp:       exp
                 |   RETURN exp{
                     Trace("Reducing to simple\n");
                 }
-                ;*/
-declarations:       declaration declarations
+                ;
+compound:           LEFT_BRACKETS contents RIGHT_BRACKETS
+                {
+                    Trace("Reducing to compound\n");
+                }
+                ;
+
+conditional:        IF LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES compound ELSE compound{
+                    Trace("Reducing to conditional\n");
+                }
+                |   IF LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES compound
+                {
+                    Trace("Reducing to conditional\n");
+                }
+                ;
+
+loop:               FOR LEFT_PARENTHESES statement SEMICOLON exp SEMICOLON statement RIGHT_PARENTHESES{
+                    Trace("Reducing to loop\n");
+                }
+                |   FOR LEFT_PARENTHESES SEMICOLON exp SEMICOLON statement RIGHT_PARENTHESES{
+                    Trace("Reducing to loop\n");
+                }
+                |   FOR LEFT_PARENTHESES SEMICOLON statement SEMICOLON exp RIGHT_PARENTHESES{
+                    Trace("Reducing to loop\n");
+                }
+                ;
+procedure_invocation:
+                    GO func_exp
+                {
+                    Trace("Reducing to procedure_invocation\n");
+                }
+                ;
+
+/*declarations:       declaration declarations
                 |
                 {
                     Trace("Reducing to declarations\n");
                 }
-                ;
+                ;*/
 declaration:        constant{
                     Trace("Reducing to declaration\n");
                 }
@@ -157,6 +179,13 @@ declaration:        constant{
                     Trace("Reducing to declaration\n");
                 }
                 ;
+//have to be change when you are doing type verify
+constant_exp:       exp
+                {
+                    Trace("Reducing to exp\n");
+                }
+                ;
+
 constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp{
                     Trace("Reducing to constant\n");
                 }
@@ -227,7 +256,7 @@ num_exp:            LEFT_PARENTHESES num_exp RIGHT_PARENTHESES
                     Trace("Reducing to num_exp\n");
                 }
                 ;
-                
+
 int_exp:            LEFT_PARENTHESES int_exp RIGHT_PARENTHESES
                 |   int_exp ARITHMETIC_ADDITION int_exp
                 |   int_exp ARITHMETIC_SUBTRACTION int_exp
