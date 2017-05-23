@@ -3,8 +3,20 @@
     #include <stdio.h>
     #define Trace(t) printf(t)
     void yyerror(char *msg);
+
 %}
 
+%union {
+    int val;
+    struct info
+    {
+        std::string* name;
+        std::string* value;
+        int style;
+        int type;
+        int size;
+    }myinfo;
+}
 /* tokens */
 %token BOOL BREAK CASE CONST CONTINUE DEFAULT ELSE FALSE FOR FUNC GO IF IMPORT INT NIL PRINT PRINTLN REAL RETURN STRING STRUCT SWITCH TRUE TYPE VAR VOID WHILE READ
 %token COMMA COLON SEMICOLON LEFT_PARENTHESES RIGHT_PARENTHESES LEFT_SQUAREBRACKETS RIGHT_SQUAREBRACKETS LEFT_BRACKETS RIGHT_BRACKETS
@@ -13,14 +25,17 @@
 %token RELATIONAL_LESS RELATIONAL_LESSEQUAL RELATIONAL_GREATEREQUAL RELATIONAL_GREATER RELATIONAL_EQUAL RELATIONAL_NOTEQUAL
 %token LOGICAL_AND LOGICAL_OR LOGICAL_NOT ASSIGNMENT
 %token COMPOUNDOPERATORS_ADDASSIGN COMPOUNDOPERATORS_SUBASSIGN COMPOUNDOPERATORS_MULASSIGN COMPOUNDOPERATORS_DIVASSIGN
-%token BOOLEANCONSTANTS_TRUE BOOLEANCONSTANTS_FALSE
-%token IDENTIFIERS INTEGERCONSTANTS REALCONSTANTS STRINGCONSTANTS
+
+%token<myinfo> IDENTIFIERS BOOLEANCONSTANTS_TRUE BOOLEANCONSTANTS_FALSE REALCONSTANTS INTEGERCONSTANTS STRINGCONSTANTS
 
 %left ARITHMETIC_ADDITION ARITHMETIC_SUBTRACTION
 %left ARITHMETIC_MULTIPLICATION ARITHMETIC_DIVIDE REMAINDER
 %left EXPONENTIATION
 %nonassoc POSITIVE
 %nonassoc NEGATIVE
+
+%type<val> type 
+%type<myinfo> exp number int_exp bool_exp num_exp func_exp array_exp
 
 %%
 start:              programs{
@@ -49,11 +64,24 @@ function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGH
                 }
                 ;
 
-type:               BOOL
-                |   INT
-                |   REAL
-                |   STRING
+type:               BOOL{
+                    $$=BOOL_TYPE;
+                    Trace("Reducing to type\n");
+                }
+                |   INT{
+                    $$=INT_TYPE;
+                    Trace("Reducing to type\n");
+                }
+                |   REAL{
+                    $$=REAL_TYPE;
+                    Trace("Reducing to type\n");
+                }
+                |   STRING{
+                    $$=STRING_TYPE;
+                    Trace("Reducing to type\n");
+                }
                 |   VOID{
+                    $$=VOID_TYPE;
                     Trace("Reducing to type\n");
                 }
                 ;
@@ -78,6 +106,7 @@ exp:                num_exp{
                     Trace("Reducing to exp\n");
                 }
                 |   STRINGCONSTANTS{
+                    $$=$1;
                     Trace("Reducing to exp\n");
                 }
                 ;
@@ -203,78 +232,265 @@ array:              VAR IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRAC
                 }
                 ;
 
-bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES
-                |   num_exp RELATIONAL_LESS num_exp
-                |   num_exp RELATIONAL_LESSEQUAL num_exp
-                |   num_exp RELATIONAL_GREATEREQUAL num_exp
-                |   num_exp RELATIONAL_GREATER num_exp
-                |   num_exp RELATIONAL_EQUAL num_exp
-                |   num_exp RELATIONAL_NOTEQUAL num_exp
-                |   bool_exp LOGICAL_AND bool_exp
-                |   bool_exp LOGICAL_OR bool_exp
-                |   LOGICAL_NOT bool_exp
+bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
+                |   num_exp RELATIONAL_LESS num_exp {
+                        if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
+                            $$=$1;
+                            if(atof($1.value->c_str())<atof($3.value->c_str())){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp RELATIONAL_LESSEQUAL num_exp {
+                        if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
+                            $$=$1;
+                            if(atof($1.value->c_str())<=atof($3.value->c_str())){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp RELATIONAL_GREATEREQUAL num_exp {
+                        if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
+                            $$=$1;
+                            if(atof($1.value->c_str())>=atof($3.value->c_str())){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp RELATIONAL_GREATER num_exp{
+                        if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
+                            $$=$1;
+                            if(atof($1.value->c_str())>atof($3.value->c_str())){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp RELATIONAL_EQUAL num_exp{
+                        if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
+                            $$=$1;
+                            if(atof($1.value->c_str())==atof($3.value->c_str())){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp RELATIONAL_NOTEQUAL num_exp{
+                        if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
+                            $$=$1;
+                            if(atof($1.value->c_str())!=atof($3.value->c_str())){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   bool_exp LOGICAL_AND bool_exp{
+                        if($1.type==BOOL_TYPE && $3.type==BOOL_TYPE){
+                            $$=$1;
+                            if((atoi($1.value->c_str())==0) || (atoi($3.value->c_str()))==0){
+                                $$.value=new string("0");
+                            }else{
+                                $$.value=new string("1");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   bool_exp LOGICAL_OR bool_exp{
+                        if($1.type==BOOL_TYPE && $3.type==BOOL_TYPE){
+                            $$=$1;
+                            if((atoi($1.value->c_str())==1)||(atoi($3.value->c_str()))==1){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   LOGICAL_NOT bool_exp{
+                        if($2.type==BOOL_TYPE){
+                            $$=$2;
+                            if(atoi($2.value->c_str())==0){
+                                $$.value=new string("1");
+                            }else{
+                                $$.value=new string("0");
+                            }
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
                 |   BOOLEANCONSTANTS_TRUE{
+                    $$=$1;
                     Trace("Reducing to bool_exp\n");
                 }
                 |   BOOLEANCONSTANTS_FALSE{
+                    $$=$1;
                     Trace("Reducing to bool_exp\n");
                 }
                 |   IDENTIFIERS{
+                    $$=$1;
                     Trace("Reducing to bool_exp\n");
                 }
                 ;
 
 number:             INTEGERCONSTANTS{
+                    $$=$1;
                     Trace("Reducing to number\n");
                 }
                 |   REALCONSTANTS{
+                    $$=$1;
                     Trace("Reducing to number\n");
                 }
                 |   func_exp{
+                    $$=$1;
                     Trace("Reducing to number\n");
                 }
                 |   array_exp{
+                    $$=$1;
                     Trace("Reducing to number\n");
                 }
                 |   IDENTIFIERS{
+                    $$=$1;
                     Trace("Reducing to number\n");
                 }
                 ;
 
-num_exp:            LEFT_PARENTHESES num_exp RIGHT_PARENTHESES
-                |   num_exp ARITHMETIC_ADDITION num_exp
-                |   num_exp ARITHMETIC_SUBTRACTION num_exp
-                |   num_exp ARITHMETIC_MULTIPLICATION num_exp
-                |   num_exp ARITHMETIC_DIVIDE num_exp
+num_exp:            LEFT_PARENTHESES num_exp RIGHT_PARENTHESES{$$=$2;}
+                |   num_exp ARITHMETIC_ADDITION num_exp{
+                        if($1.type==$3.type && (($1.type==INT_TYPE)||($1.type==REAL_TYPE))){
+                            $$ = $1;
+                            $$.value = new string(to_string(atof($1.value->c_str())+atof($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp ARITHMETIC_SUBTRACTION num_exp{
+                        if($1.type==$3.type && (($1.type==INT_TYPE)||($1.type==REAL_TYPE))){
+                            $$ = $1;
+                            $$.value = new string(to_string(atof($1.value->c_str())-atof($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp ARITHMETIC_MULTIPLICATION num_exp{
+                        if($1.type==$3.type && (($1.type==INT_TYPE)||($1.type==REAL_TYPE))){
+                            $$ = $1;
+                            $$.value = new string(to_string(atof($1.value->c_str())*atof($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   num_exp ARITHMETIC_DIVIDE num_exp{
+                        if($1.type==$3.type && (($1.type==INT_TYPE)||($1.type==REAL_TYPE))){
+                            $$ = $1;
+                            $$.value = new string(to_string(atof($1.value->c_str())/atof($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
                 |   ARITHMETIC_ADDITION num_exp %prec POSITIVE{
-                    Trace("Reducing to num_exp\n");
+                        $$ = $2;
+                        Trace("Reducing to num_exp\n");
                 }
                 |   ARITHMETIC_SUBTRACTION num_exp %prec NEGATIVE{
-                    Trace("Reducing to num_exp\n");
+                        $$ = $2;
+                        $$.value = new string(to_string(-1.0*atof($2.value->c_str())));
+                        Trace("Reducing to num_exp\n");
                 }
                 |   number{
-                    Trace("Reducing to num_exp\n");
+                        $$=$1;
+                        Trace("Reducing to num_exp\n");
                 }
                 ;
 
-int_exp:            LEFT_PARENTHESES int_exp RIGHT_PARENTHESES
-                |   int_exp ARITHMETIC_ADDITION int_exp
-                |   int_exp ARITHMETIC_SUBTRACTION int_exp
-                |   int_exp ARITHMETIC_MULTIPLICATION int_exp
-                |   int_exp ARITHMETIC_DIVIDE int_exp
-                |   ARITHMETIC_ADDITION int_exp %prec POSITIVE{
-                    Trace("Reducing to int_exp\n");
-                }
+int_exp:            LEFT_PARENTHESES int_exp RIGHT_PARENTHESES{$$=$2;}
+                |   int_exp ARITHMETIC_ADDITION int_exp{
+                        if($1.type==$3.type && $1.type==INT_TYPE){
+                            $$ = $1;
+                            $$.value = new string(to_string(atoi($1.value->c_str())+atoi($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   int_exp ARITHMETIC_SUBTRACTION int_exp{
+                        if($1.type==$3.type && $1.type==INT_TYPE){
+                            $$ = $1;
+                            $$.value = new string(to_string(atoi($1.value->c_str())-atoi($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   int_exp ARITHMETIC_MULTIPLICATION int_exp{
+                        if($1.type==$3.type && $1.type==INT_TYPE){
+                            $$ = $1;
+                            $$.value = new string(to_string(atoi($1.value->c_str())*atoi($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   int_exp ARITHMETIC_DIVIDE int_exp{
+                        if($1.type==$3.type && $1.type==INT_TYPE){
+                            $$ = $1;
+                            $$.value = new string(to_string(atoi($1.value->c_str())/atoi($3.value->c_str())));
+                        }else{
+                            printf("Error not a same type\n");
+                            return 1;
+                        }
+                    }
+                |   /*ARITHMETIC_ADDITION int_exp %prec POSITIVE{
+                        $$=$2;
+                        Trace("Reducing to int_exp\n");
+                    }
                 |   ARITHMETIC_SUBTRACTION int_exp %prec NEGATIVE{
-                    Trace("Reducing to int_exp\n");
+                        $$=$2;
+                        $$.value = new string(to_string(-atoi($2.value->c_str())));
+                        Trace("Reducing to int_exp\n");
                 }
-                |   INTEGERCONSTANTS{
-                    Trace("Reducing to int_exp\n");
+                |*/   INTEGERCONSTANTS{
+                        $$=$1;
+                        Trace("Reducing to int_exp\n");
                 }
                 ;
 
-array_exp:          IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS
-                {
+array_exp:          IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS{
                     Trace("Reducing to array_exp\n");
                 }
                 ;

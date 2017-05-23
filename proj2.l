@@ -10,7 +10,21 @@
 	#define LIST strcat(buf,yytext)
 	#define MAX_LINE_LENG 256
 
+	#define UNSURE_TYPE 0
+	#define INT_TYPE 1
+	#define REAL_TYPE 2
+	#define STRING_TYPE 3
+	#define BOOL_TYPE 4
+	#define VOID_TYPE 5
+
+	#define UNSURE_STYLE 0
+	#define FUNC_STYLE 1
+	#define ARRAY_STYLE 2
+	#define VAR_STYLE 3
+	#define CONST_STYLE 4
 	// queue<string> handler;
+
+	typedef union YYSTYPE infor;
 	bool flagNonsingle=false;
 	bool flagSingle=false;
 	int linenum = 1;
@@ -105,7 +119,7 @@
 	// }
 
 %}
-%x string
+%x strings
 %x comment
 
 comma ,
@@ -177,8 +191,26 @@ realConstants {decimal}|{exponent}
 {compoundOperators_subAssign} {return token( COMPOUNDOPERATORS_SUBASSIGN);}
 {compoundOperators_mulAssign} {return token( COMPOUNDOPERATORS_MULASSIGN);}
 {compoundOperators_divAssign} {return token( COMPOUNDOPERATORS_DIVASSIGN);}
-{booleanConstants_true} {return token( BOOLEANCONSTANTS_TRUE);}
-{booleanConstants_false} {return token( BOOLEANCONSTANTS_FALSE);}
+
+{booleanConstants_true} %{
+	infor::info its_T;
+	its_T.name = new string("const");
+	its_T.value = new string("1");;
+	its_T.type = BOOL_TYPE;
+	its_T.style = CONST_STYLE;
+	its_T.size = 1;
+	yylval.myinfo=its_T;
+	return token( BOOLEANCONSTANTS_TRUE);%}
+{booleanConstants_false} %{
+	infor::info its_F;
+	its_F.name = new string("const");
+	its_F.value = new string("0");;
+	its_F.type = BOOL_TYPE;
+	its_F.style = CONST_STYLE;
+	its_F.size = 1;
+	yylval.myinfo=its_F;
+	return token( BOOLEANCONSTANTS_FALSE);%}
+
 "bool" {return tokenKeyword( BOOL);}
 "break" {return tokenKeyword( BREAK);}
 "case" {return tokenKeyword( CASE);}
@@ -207,30 +239,61 @@ realConstants {decimal}|{exponent}
 "void" {return tokenKeyword( VOID);}
 "while" {return tokenKeyword( WHILE);}
 "read" {return tokenKeyword( READ);}
-{identifiers} {return tokenIdentifiers( IDENTIFIERS);}
-{integerConstants} {return token( INTEGERCONSTANTS);}
-{realConstants} {return token( REALCONSTANTS);}
+{identifiers} %{
+	infor::info its_ID;
+	its_ID.name = new string(yytext);
+	its_ID.value = new string("0");
+	its_ID.type = UNSURE_TYPE;
+	its_ID.style = UNSURE_STYLE;
+	its_ID.size = 1;
+	yylval.myinfo=its_ID;
+	return tokenIdentifiers( IDENTIFIERS);%}
+{integerConstants} %{
+	infor::info its_INT;
+	its_INT.name = new string("const");
+	its_INT.value = new string(yytext);
+	its_INT.type = INT_TYPE;
+	its_INT.style = CONST_STYLE;
+	its_INT.size = 1;
+	yylval.myinfo=its_INT;
+	return token( INTEGERCONSTANTS);%}
+{realConstants} %{
+	infor::info its_REAL;
+	its_REAL.name = new string("const");
+	its_REAL.value = new string(yytext);
+	its_REAL.type = REAL_TYPE;
+	its_REAL.style = CONST_STYLE;
+	its_REAL.size = 1;
+	yylval.myinfo=its_REAL;
+	return token( REALCONSTANTS);%}
 
 \"			{
-				BEGIN string;
+				BEGIN strings;
 				strbuf[0] = '\0';
 				LIST;
 			}
-<string>\" 	{
+<strings>\" 	{
 				BEGIN 0;
 				printf("<string:%s>\n", strbuf.c_str());
+				infor::info its_STRING;
+				its_STRING.name = new string("const");
+				its_STRING.value = new string(yytext);
+				its_STRING.type = STRING_TYPE;
+				its_STRING.style = CONST_STYLE;
+				its_STRING.size = 1;
+				yylval.myinfo=its_STRING;
 				return STRINGCONSTANTS;
 			}
-<string>\"\" {
+<strings>\"\" {
 				strbuf+="\"";
 				LIST;
 			}
 
-<string>\n 	{
+<strings>\n 	{
 				printf("missing terminal symbol \"\n");
 				exit(-1);
 			}
-<string>.	{
+<strings>.	{
 				strbuf+=yytext;
 				LIST;
 			}
