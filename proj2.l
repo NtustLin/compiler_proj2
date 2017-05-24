@@ -5,7 +5,6 @@
 	#include <map>
 	#include <list>
 	#include "y.tab.h"
-	using namespace std;
 
 	#define LIST strcat(buf,yytext)
 	#define MAX_LINE_LENG 256
@@ -29,43 +28,86 @@
 	bool flagSingle=false;
 	int linenum = 1;
 	char buf[MAX_LINE_LENG];
-	string strbuf;
+	std::string strbuf;
+	
+	class idtuple{
+	public:
+		idtuple(){
+			name = "0";
+			value = "0";
+			scope = "0";
+			type = 0;
+			style = 0;
+			size = 1;
+		}
+		idtuple(std::string myname, std::string myscope, std::string myvalue, int mytype, int mystyle, int mysize){
+			name = myname;
+			value = myvalue;
+			scope = myscope;
+			type = mytype;
+			style = mystyle;
+			size = mysize;
+		}
+		std::string getname(){return name;}
+		std::string getvalue(){return value;}
+		std::string getscope(){return scope;}
+		int gettype(){return type;}
+		int getstyle(){return style;}
+		int getsize(){return size;}
+		void setname(std::string s){name=s;}
+	private:
+		std::string name;
+		std::string value;
+		std::string scope;
+		int type;
+		int style;
+		int size;
+		int counter; //array size
+	};
 
 	class hashtable{
 		public:
 			hashtable(){
 				count=0;
 			}
-			int lookup(string s){
-				map<string,int>::iterator it;
-				it = strTables.find(s);
-				if(it != strTables.end()){
-					return it->second;
+			int lookup(std::string s){
+				std::map<std::string,idtuple>::iterator it;
+				it = idTables.find(s);
+				if(it != idTables.end()){
+					return 1;
 				}else{
 					return -1;
 				}
 			}
-			int insert(string s){
-				strTables[s]=count;
-				intTables[count]=s;
+			int insert(std::string s, idtuple id){
+				idTables[s]=id;
+				intTables[count]=id;
 				count++;
 				return count-1;
 			}
+			idtuple getdata(std::string s){
+				idtuple id;
+				std::map<std::string,idtuple>::iterator it;
+				it = idTables.find(s);
+				id = it->second;
+				return id;
+			}
 			void dump(){
-				for (map<int,string>::iterator it=intTables.begin(); it!=intTables.end(); ++it){
-    				cout << it->first << " => " << it->second << '\n';
+				for (std::map<int,idtuple>::iterator it=intTables.begin(); it!=intTables.end(); ++it){
+    				std::cout << it->first << " => " << it->second.getname()<<" "<< it->second.getvalue	() <<" "<< it->second.gettype() <<" "<< it->second.getstyle()<<" "<< it->second.getsize() << '\n';
 				}
 			}
 		private:
-			map<string,int> strTables;
-			map<int,string> intTables;
+			std::map<std::string,idtuple> idTables;
+			std::map<int,idtuple> intTables;
 			int count;
 	};
-	list<hashtable> symbolTables;
-	hashtable create(){
-		hashtable temp;
+	
+	std::list<hashtable> symbolTables;
+	
+	void create(){
+    	hashtable temp;
 		symbolTables.push_front(temp);
-		return temp;
 	}
 
 	// void handleString(){
@@ -104,9 +146,13 @@
 		if(flagNonsingle==false&&flagSingle==false){
 			// handleString();
 			// printf("<id:%s>\n",yytext);
-			if (symbolTables.front().lookup(yytext)==-1){
-				symbolTables.front().insert(yytext);
-			}
+			/*if (symbolTables.front().lookup(yytext)==-1){
+				idtuple id;
+				id.setname(yytext);
+				symbolTables.front().insert(yytext,id);
+				// printf("aaaaaaaaaaaaaaaaaaaaa %s\n", id.getname().c_str());
+				// printf("hereeeeeeeeeeeeeeeeeeeeeeeeeeeee %d\n", symbolTables.front().lookup(yytext));
+			}*/
 			return def;
 		}
 	} 
@@ -194,8 +240,8 @@ realConstants {decimal}|{exponent}
 
 {booleanConstants_true} %{
 	infor::info its_T;
-	its_T.name = new string("const");
-	its_T.value = new string("1");;
+	its_T.name = new std::string("const");
+	its_T.value = new std::string("1");;
 	its_T.type = BOOL_TYPE;
 	its_T.style = CONST_STYLE;
 	its_T.size = 1;
@@ -203,8 +249,8 @@ realConstants {decimal}|{exponent}
 	return token( BOOLEANCONSTANTS_TRUE);%}
 {booleanConstants_false} %{
 	infor::info its_F;
-	its_F.name = new string("const");
-	its_F.value = new string("0");;
+	its_F.name = new std::string("const");
+	its_F.value = new std::string("0");;
 	its_F.type = BOOL_TYPE;
 	its_F.style = CONST_STYLE;
 	its_F.size = 1;
@@ -241,8 +287,8 @@ realConstants {decimal}|{exponent}
 "read" {return tokenKeyword( READ);}
 {identifiers} %{
 	infor::info its_ID;
-	its_ID.name = new string(yytext);
-	its_ID.value = new string("0");
+	its_ID.name = new std::string(yytext);
+	its_ID.value = new std::string("0");
 	its_ID.type = UNSURE_TYPE;
 	its_ID.style = UNSURE_STYLE;
 	its_ID.size = 1;
@@ -250,8 +296,8 @@ realConstants {decimal}|{exponent}
 	return tokenIdentifiers( IDENTIFIERS);%}
 {integerConstants} %{
 	infor::info its_INT;
-	its_INT.name = new string("const");
-	its_INT.value = new string(yytext);
+	its_INT.name = new std::string("const");
+	its_INT.value = new std::string(yytext);
 	its_INT.type = INT_TYPE;
 	its_INT.style = CONST_STYLE;
 	its_INT.size = 1;
@@ -259,8 +305,8 @@ realConstants {decimal}|{exponent}
 	return token( INTEGERCONSTANTS);%}
 {realConstants} %{
 	infor::info its_REAL;
-	its_REAL.name = new string("const");
-	its_REAL.value = new string(yytext);
+	its_REAL.name = new std::string("const");
+	its_REAL.value = new std::string(yytext);
 	its_REAL.type = REAL_TYPE;
 	its_REAL.style = CONST_STYLE;
 	its_REAL.size = 1;
@@ -276,8 +322,8 @@ realConstants {decimal}|{exponent}
 				BEGIN 0;
 				printf("<string:%s>\n", strbuf.c_str());
 				infor::info its_STRING;
-				its_STRING.name = new string("const");
-				its_STRING.value = new string(yytext);
+				its_STRING.name = new std::string("const");
+				its_STRING.value = new std::string(yytext);
 				its_STRING.type = STRING_TYPE;
 				its_STRING.style = CONST_STYLE;
 				its_STRING.size = 1;
@@ -307,7 +353,7 @@ realConstants {decimal}|{exponent}
 				BEGIN 0;
 			}
 <comment>.	{}
-\/\/.*\n {printf("%d:%s\n", linenum++, buf);}
+\/\/.*\n {printf("%d:%s\n", linenum++, buf); buf[0]='\0';}
 
 [ \t]* {LIST;}
 \n {

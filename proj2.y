@@ -3,9 +3,67 @@
     #include <stdio.h>
     #define Trace(t) printf(t)
     void yyerror(char *msg);
+    using namespace std;
+
+    std::string nowscope;
+    list<std::string> scope;
+
+    void insert(std::string s, idtuple id){
+        symbolTables.begin()->insert(s,id);
+    }
+    // 執行的時候用的要看全部的人有宣告過的東西
+    int lookup(std::string s){
+        for (std::list<hashtable>::iterator it=symbolTables.begin(); it!=symbolTables.end(); ++it){
+            if(it->lookup(s)==1)
+                return 1;
+        }
+        return -1;
+    }   
+    // 宣告用只看自己的scope
+    int current_lookup(std::string s){
+        if(symbolTables.front().lookup(s)==1)
+            return 1;
+        else
+            return -1;
+    }
+    void init_scope(){
+        create();
+        nowscope = "golbal";
+        scope.push_front("golbal");
+    }
+    void start_scope(std::string s){
+        create();
+        nowscope = s;
+        scope.push_front(s);
+    }
+    void end_scope(){
+        symbolTables.pop_front();
+        scope.pop_front();
+        nowscope = scope.front();
+    }
+    infor::info getdata(std::string s){
+        infor::info in;
+        idtuple id;
+        for (std::list<hashtable>::iterator it=symbolTables.begin(); it!=symbolTables.end(); ++it){
+            if(it->lookup(s)==1){
+                id = it->getdata(s);
+                in.name = new std::string(id.getname());
+                in.value = new std::string(id.getvalue());
+                in.type = id.gettype();
+                in.style = id.getstyle();
+                in.size = id.getsize();
+            }
+        }
+        return in;    
+    }
+    void dump(){
+        for (std::list<hashtable>::iterator it=symbolTables.begin(); it!=symbolTables.end(); ++it){
+            it->dump();
+            // std::cout << it->first << " => " << it->second.getname() << '\n';
+        }
+    }
 
 %}
-
 %union {
     int val;
     struct info
@@ -35,7 +93,7 @@
 %nonassoc NEGATIVE
 
 %type<val> type 
-%type<myinfo> exp number int_exp bool_exp num_exp func_exp array_exp
+%type<myinfo> exp number int_exp bool_exp num_exp func_exp array_exp constant variable constant_exp declaration simple
 
 %%
 start:              programs{
@@ -60,6 +118,13 @@ functions:          function functions
                 }
                 ;
 function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGHT_PARENTHESES compound{
+                    if (current_lookup($3.name->c_str())==-1){
+                        idtuple temp($3.name->c_str(), nowscope, "0", $2, FUNC_STYLE, 1);
+                        insert($3.name->c_str(),temp);
+                    }else{
+                        printf("func redefine\n");
+                        return 1;
+                    }
                     Trace("Reducing to function\n");
                 }
                 ;
@@ -100,10 +165,20 @@ formal_argument:    IDENTIFIERS type{
                 ;
 
 exp:                num_exp{
+                    $$=$1;
                     Trace("Reducing to exp\n");
                 }
                 |   bool_exp{
+                    $$=$1;
                     Trace("Reducing to exp\n");
+                }
+                |   array_exp{
+                    $$=$1;
+                    Trace("Reducing to exp\n");   
+                }
+                |   func_exp{
+                    $$=$1;
+                    Trace("Reducing to exp\n");   
                 }
                 |   STRINGCONSTANTS{
                     $$=$1;
@@ -118,7 +193,8 @@ contents:           content contents
                 }
                 ;
 content:            declaration
-                |   statement{
+                |   statement
+                |   function{
                     Trace("Reducing to content\n");
                 }
                 ;
@@ -139,9 +215,29 @@ statement:          simple
                 }
                 ;
 simple:             IDENTIFIERS ASSIGNMENT exp{
+                    if(lookup($1.name->c_str())==1){
+                        $1 = getdata($1.name->c_str());
+                        if ($1.type!=$3.type){
+                            printf("type is not equal\n");
+                            return 1;
+                        }
+                    }else{
+                        printf("id doesn't exist\n");
+                        return 1;
+                    }
                     Trace("Reducing to simple\n");
                 }
                 |   IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS ASSIGNMENT exp{
+                    if(lookup($1.name->c_str())==1){
+                        $1 = getdata($1.name->c_str());
+                        if ($1.type!=$6.type){
+                            printf("type is not equal\n");
+                            return 1;
+                        }
+                    }else{
+                        printf("id doesn't exist\n");
+                        return 1;
+                    }
                     Trace("Reducing to simple\n");
                 }
                 |   PRINT exp{
@@ -160,8 +256,9 @@ simple:             IDENTIFIERS ASSIGNMENT exp{
                     Trace("Reducing to simple\n");
                 }
                 ;
-compound:           LEFT_BRACKETS contents RIGHT_BRACKETS
+compound:           LEFT_BRACKETS{start_scope("compound");} contents RIGHT_BRACKETS
                 {
+                    end_scope();
                     Trace("Reducing to compound\n");
                 }
                 ;
@@ -175,13 +272,13 @@ conditional:        IF LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES compound ELSE
                 }
                 ;
 
-loop:               FOR LEFT_PARENTHESES statement SEMICOLON exp SEMICOLON statement RIGHT_PARENTHESES{
+loop:               FOR LEFT_PARENTHESES statement SEMICOLON bool_exp SEMICOLON statement RIGHT_PARENTHESES compound{
                     Trace("Reducing to loop\n");
                 }
-                |   FOR LEFT_PARENTHESES SEMICOLON exp SEMICOLON statement RIGHT_PARENTHESES{
+                |   FOR LEFT_PARENTHESES bool_exp SEMICOLON statement RIGHT_PARENTHESES compound{
                     Trace("Reducing to loop\n");
                 }
-                |   FOR LEFT_PARENTHESES SEMICOLON statement SEMICOLON exp RIGHT_PARENTHESES{
+                |   FOR LEFT_PARENTHESES statement SEMICOLON bool_exp RIGHT_PARENTHESES compound{
                     Trace("Reducing to loop\n");
                 }
                 ;
@@ -211,23 +308,59 @@ declaration:        constant{
 //have to be change when you are doing type verify
 constant_exp:       exp
                 {
+                    if($1.style==CONST_STYLE)
+                        $$=$1;
+                    else{
+                        printf("error! not a const value\n");
+                        return 1;
+                    }
                     Trace("Reducing to exp\n");
                 }
                 ;
 
 constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp{
+                    if (current_lookup($2.name->c_str())==-1){
+                        idtuple temp($2.name->c_str(), nowscope, $4.value->c_str(), $4.type, CONST_STYLE, 1);
+                        insert($2.name->c_str(),temp);
+                    }else{
+                        printf("id redefine\n");
+                        return 1;
+                    }
+
                     Trace("Reducing to constant\n");
                 }
                 ;
 variable:           VAR IDENTIFIERS type ASSIGNMENT constant_exp{
+                    if (current_lookup($2.name->c_str())==-1){
+                        idtuple temp($2.name->c_str(), nowscope, $5.value->c_str(), $3, VAR_STYLE, 1);
+                        insert($2.name->c_str(),temp);
+                    }else{
+                        printf("id redefine\n");
+                        return 1;
+                    }
                     Trace("Reducing to variable\n");
                 }
                 |   VAR IDENTIFIERS type{
+                    if (current_lookup($2.name->c_str())==-1){
+                        idtuple temp($2.name->c_str(), nowscope, "0", $3, VAR_STYLE, 1);
+                        insert($2.name->c_str(),temp);
+                        // symbolTables.front().dump();
+                    }else{
+                        printf("id redefine\n");
+                        return 1;
+                    }
                     Trace("Reducing to variable\n");
                 }
                 ;
 array:              VAR IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS type
                 {
+                    if (current_lookup($2.name->c_str())==-1){
+                        idtuple temp($2.name->c_str(), nowscope, "0", $6, ARRAY_STYLE, atoi($4.value->c_str()));
+                        insert($2.name->c_str(),temp);
+                    }else{
+                        printf("array redefine\n");
+                        return 1;
+                    }
                     Trace("Reducing to array\n");
                 }
                 ;
@@ -359,6 +492,7 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                     Trace("Reducing to bool_exp\n");
                 }
                 |   IDENTIFIERS{
+                    $1 = getdata($1.name->c_str());
                     $$=$1;
                     Trace("Reducing to bool_exp\n");
                 }
@@ -381,6 +515,7 @@ number:             INTEGERCONSTANTS{
                     Trace("Reducing to number\n");
                 }
                 |   IDENTIFIERS{
+                    $1 = getdata($1.name->c_str());
                     $$=$1;
                     Trace("Reducing to number\n");
                 }
@@ -490,18 +625,38 @@ int_exp:            LEFT_PARENTHESES int_exp RIGHT_PARENTHESES{$$=$2;}
                 }
                 ;
 
-array_exp:          IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS{
+array_exp:          IDENTIFIERS LEFT_SQUAREBRACKETS exp RIGHT_SQUAREBRACKETS{
+                        if(lookup($1.name->c_str())==1){
+                            $$ = getdata($1.name->c_str());
+                            $$.style = VAR_STYLE;           //a[0] is a var
+                            if ($3.type!=INT_TYPE){
+                                printf("index must be int\n");
+                                return 1;
+                            }
+                        }else{
+                            printf("array id doesn't exist\n");
+                            return 1;
+                        }
                     Trace("Reducing to array_exp\n");
                 }
                 ;
 
 func_exp:           IDENTIFIERS LEFT_PARENTHESES parameters RIGHT_PARENTHESES{
+                        if(lookup($1.name->c_str())==1){
+                            $$ = getdata($1.name->c_str());
+                            $$.style = VAR_STYLE;           //func() is a var
+                        }else{
+                            printf("func id doesn't exist\n");
+                            return 1;
+                        }
                     Trace("Reducing to func_exp\n");
                 }
                 ;
-parameters:         exp COMMA exp
+parameters:         parameter
+                | 
+                ;
+parameter:          exp COMMA parameter
                 |   exp
-                |   
                 {
                     Trace("Reducing to parameters\n");
                 }
@@ -522,10 +677,10 @@ int main(int argc, char **argv)
         exit(1);
     }
     yyin = fopen(argv[1], "r");         /* open input file */
-    hashtable one;
-    one = create();
+    init_scope();
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror("Parsing error !");     /* syntax error */
+    dump();
 }
 
