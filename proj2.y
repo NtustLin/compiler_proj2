@@ -7,7 +7,7 @@
 
     std::string nowscope;
     list<std::string> scope;
-
+    
     void insert(std::string s, idtuple id){
         symbolTables.begin()->insert(s,id);
     }
@@ -217,6 +217,8 @@ statement:          simple
 simple:             IDENTIFIERS ASSIGNMENT exp{
                     if(lookup($1.name->c_str())==1){
                         $1 = getdata($1.name->c_str());
+                        printf("simple $1 %s %d\n", $1.name->c_str(), $1.type);
+                        printf("simple $3 %s %d\n", $3.name->c_str(), $3.type);
                         if ($1.type!=$3.type){
                             printf("type is not equal\n");
                             return 1;
@@ -246,7 +248,7 @@ simple:             IDENTIFIERS ASSIGNMENT exp{
                 |   PRINTLN exp{
                     Trace("Reducing to simple\n");
                 }
-                |   READ exp{
+                |   READ IDENTIFIERS{
                     Trace("Reducing to simple\n");
                 }
                 |   RETURN{
@@ -273,12 +275,6 @@ conditional:        IF LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES compound ELSE
                 ;
 
 loop:               FOR LEFT_PARENTHESES statement SEMICOLON bool_exp SEMICOLON statement RIGHT_PARENTHESES compound{
-                    Trace("Reducing to loop\n");
-                }
-                |   FOR LEFT_PARENTHESES bool_exp SEMICOLON statement RIGHT_PARENTHESES compound{
-                    Trace("Reducing to loop\n");
-                }
-                |   FOR LEFT_PARENTHESES statement SEMICOLON bool_exp RIGHT_PARENTHESES compound{
                     Trace("Reducing to loop\n");
                 }
                 ;
@@ -331,11 +327,13 @@ constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp{
                 }
                 ;
 variable:           VAR IDENTIFIERS type ASSIGNMENT constant_exp{
-                    if (current_lookup($2.name->c_str())==-1){
+                        printf("var $2 %d\n", $2.type);
+                        printf("var $5 %d\n", $5.type);
+                    if (current_lookup($2.name->c_str())==-1 && $3==$5.type){
                         idtuple temp($2.name->c_str(), nowscope, $5.value->c_str(), $3, VAR_STYLE, 1);
                         insert($2.name->c_str(),temp);
                     }else{
-                        printf("id redefine\n");
+                        printf("id redefine or wrong type assign\n");
                         return 1;
                     }
                     Trace("Reducing to variable\n");
@@ -369,6 +367,7 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                 |   num_exp RELATIONAL_LESS num_exp {
                         if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
                             $$=$1;
+                            $$.type = BOOL_TYPE;
                             if(atof($1.value->c_str())<atof($3.value->c_str())){
                                 $$.value=new string("1");
                             }else{
@@ -382,6 +381,7 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                 |   num_exp RELATIONAL_LESSEQUAL num_exp {
                         if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
                             $$=$1;
+                            $$.type = BOOL_TYPE;
                             if(atof($1.value->c_str())<=atof($3.value->c_str())){
                                 $$.value=new string("1");
                             }else{
@@ -395,6 +395,7 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                 |   num_exp RELATIONAL_GREATEREQUAL num_exp {
                         if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
                             $$=$1;
+                            $$.type = BOOL_TYPE;
                             if(atof($1.value->c_str())>=atof($3.value->c_str())){
                                 $$.value=new string("1");
                             }else{
@@ -408,12 +409,14 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                 |   num_exp RELATIONAL_GREATER num_exp{
                         if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
                             $$=$1;
+                            $$.type = BOOL_TYPE;
                             if(atof($1.value->c_str())>atof($3.value->c_str())){
                                 $$.value=new string("1");
                             }else{
                                 $$.value=new string("0");
                             }
                         }else{
+                            // symbolTables.front().dump();
                             printf("Error not a same type\n");
                             return 1;
                         }
@@ -421,6 +424,7 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                 |   num_exp RELATIONAL_EQUAL num_exp{
                         if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
                             $$=$1;
+                            $$.type = BOOL_TYPE;
                             if(atof($1.value->c_str())==atof($3.value->c_str())){
                                 $$.value=new string("1");
                             }else{
@@ -434,6 +438,7 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                 |   num_exp RELATIONAL_NOTEQUAL num_exp{
                         if(($1.type==INT_TYPE || $3.type==INT_TYPE || $1.type==REAL_TYPE || $3.type==REAL_TYPE) && $1.type==$3.type){
                             $$=$1;
+                            $$.type = BOOL_TYPE;
                             if(atof($1.value->c_str())!=atof($3.value->c_str())){
                                 $$.value=new string("1");
                             }else{

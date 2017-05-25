@@ -94,7 +94,7 @@
 			}
 			void dump(){
 				for (std::map<int,idtuple>::iterator it=intTables.begin(); it!=intTables.end(); ++it){
-    				std::cout << it->first << " => " << it->second.getname()<<" "<< it->second.getvalue	() <<" "<< it->second.gettype() <<" "<< it->second.getstyle()<<" "<< it->second.getsize() << '\n';
+    				std::cout << it->first << " => " << it->second.getname()<<" "<< it->second.getvalue() <<" "<< it->second.gettype() <<" "<< it->second.getstyle()<<" "<< it->second.getsize() << '\n';
 				}
 			}
 		private:
