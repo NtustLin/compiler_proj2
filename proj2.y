@@ -7,6 +7,7 @@
 
     std::string nowscope;
     list<std::string> scope;
+    std::map<std::string, list<int>*> func_arg;/*存型態 因為.l都宣告成數字了所以是int*/
     
     void insert(std::string s, idtuple id){
         symbolTables.begin()->insert(s,id);
@@ -53,9 +54,16 @@
                 in.type = id.gettype();
                 in.style = id.getstyle();
                 in.size = id.getsize();
+                return in; 
             }
         }
-        return in;    
+        in.name = new std::string("0");
+        in.value = new std::string("0");
+        in.type = 0;
+        in.style = 0;
+        in.size = -1;
+        return in;
+
     }
     void dump(){
         for (std::list<hashtable>::iterator it=symbolTables.begin(); it!=symbolTables.end(); ++it){
@@ -67,7 +75,7 @@
 %}
 %union {
     int val;
-    // id的資訊 名字 數值 類型 型態 空間大小
+    // id的資訊 名字 值 類型 型態 空間大小 func要傳入參數的型態有哪些
     struct info
     {
         std::string* name;
@@ -75,6 +83,7 @@
         int style;
         int type;
         int size;
+        std::list<int>* argstype;
     }myinfo;
 }
 /* tokens */
@@ -94,7 +103,7 @@
 %nonassoc POSITIVE
 %nonassoc NEGATIVE
 
-%type<val> type 
+%type<val> type formal_argument 
 %type<myinfo> exp number int_exp bool_exp num_exp func_exp array_exp constant variable constant_exp declaration simple
 
 %%
@@ -105,22 +114,21 @@ start:              programs{
 programs:           program programs
                 |   
                 {
-                    Trace("Reducing to programs\n");
+                    // Trace("Reducing to programs\n");
                 }
                 ;
 program:            functions
                 |   contents{
-                    Trace("Reducing to program\n");
+                    // Trace("Reducing to program\n");
                 }
                 ;
 functions:          function functions
                 |   
                 {
-                    Trace("Reducing to functions\n");
+                    // Trace("Reducing to functions\n");
                 }
                 ;
-function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGHT_PARENTHESES compound{
-                    // function 要被宣告時利用current_lookup function 去看這個id在當前scope裡是否已經被宣告過了
+function:           FUNC type IDENTIFIERS LEFT_PARENTHESES{
                     if (current_lookup($3.name->c_str())==-1){
                         idtuple temp($3.name->c_str(), nowscope, "0", $2, FUNC_STYLE, 1);
                         insert($3.name->c_str(),temp);
@@ -128,29 +136,34 @@ function:           FUNC type IDENTIFIERS LEFT_PARENTHESES formal_arguments RIGH
                         printf("func redefine\n");
                         return 1;
                     }
-                    Trace("Reducing to function\n");
+                    start_scope("function");} 
+                    formal_arguments RIGHT_PARENTHESES LEFT_BRACKETS contents RIGHT_BRACKETS{
+                    // function 要被宣告時利用current_lookup function 去看這個id在當前scope裡是否已經被宣告過了
+                    
+                    // Trace("Reducing to function\n");
+                    end_scope();
                 }
                 ;
 
 type:               BOOL{
                     $$=BOOL_TYPE;
-                    Trace("Reducing to type\n");
+                    // Trace("Reducing to type\n");
                 }
                 |   INT{
                     $$=INT_TYPE;
-                    Trace("Reducing to type\n");
+                    // Trace("Reducing to type\n");
                 }
                 |   REAL{
                     $$=REAL_TYPE;
-                    Trace("Reducing to type\n");
+                    // Trace("Reducing to type\n");
                 }
                 |   STRING{
                     $$=STRING_TYPE;
-                    Trace("Reducing to type\n");
+                    // Trace("Reducing to type\n");
                 }
                 |   VOID{
                     $$=VOID_TYPE;
-                    Trace("Reducing to type\n");
+                    // Trace("Reducing to type\n");
                 }
                 ;
 
@@ -158,47 +171,55 @@ formal_arguments:   formal_argument COMMA formal_arguments
                 |   formal_argument
                 |
                 {
-                    Trace("Reducing to formal_arguments\n");
+                    // Trace("Reducing to formal_arguments\n");
                 }
                 ;
 
 formal_argument:    IDENTIFIERS type{
-                    Trace("Reducing to formal_argument\n");
+                    if (current_lookup($1.name->c_str()) == 1){
+                        printf("%s redefine\n", $1.name->c_str());
+                        return 1;
+                    }else{
+                        $$=$2;
+                        idtuple temp($1.name->c_str(), nowscope, "0", $2, VAR_STYLE, -1);
+                        insert($1.name->c_str(),temp);
+                    }
+                    // Trace("Reducing to formal_argument\n");
                 }
                 ;
 
 exp:                num_exp{
                     $$=$1;
-                    Trace("Reducing to exp\n");
+                    // Trace("Reducing to exp\n");
                 }
                 |   bool_exp{
                     $$=$1;
-                    Trace("Reducing to exp\n");
+                    // Trace("Reducing to exp\n");
                 }
                 |   array_exp{
                     $$=$1;
-                    Trace("Reducing to exp\n");   
+                    // Trace("Reducing to exp\n");   
                 }
                 |   func_exp{
                     $$=$1;
-                    Trace("Reducing to exp\n");   
+                    // Trace("Reducing to exp\n");   
                 }
                 |   STRINGCONSTANTS{
                     $$=$1;
-                    Trace("Reducing to exp\n");
+                    // Trace("Reducing to exp\n");
                 }
                 ;
 
 contents:           content contents
                 |   
                 {
-                    Trace("Reducing to contents\n");
+                    // Trace("Reducing to contents\n");
                 }
                 ;
 content:            declaration
                 |   statement
                 |   function{
-                    Trace("Reducing to content\n");
+                    // Trace("Reducing to content\n");
                 }
                 ;
 
@@ -213,19 +234,22 @@ statement:          simple
                 |   conditional
                 |   loop
                 |   procedure_invocation
+                |   // 6/6 for's empty statement
                 {
-                    Trace("Reducing to statement\n");
+                    // Trace("Reducing to statement\n");
                 }
                 ;
 simple:             IDENTIFIERS ASSIGNMENT exp{
                     // 判斷id是否存在 再判斷id是不是const 再判斷type是否相同
                     if(lookup($1.name->c_str())==1){
                         $1 = getdata($1.name->c_str());
+                        printf("%s %d\n", $1.name->c_str(),$1.type);
                         if($1.style==CONST_STYLE){
                             printf("const can not be assign\n");
                             return 1;
                         }
                         if ($1.type!=$3.type){
+                            printf("%s %d = %s %d\n",$1.name->c_str(), $1.type, $3.name->c_str() ,$3.type);
                             printf("type is not equal\n");
                             return 1;
                         }
@@ -234,7 +258,7 @@ simple:             IDENTIFIERS ASSIGNMENT exp{
                         printf("id doesn't exist\n");
                         return 1;
                     }
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 |   IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRACKETS ASSIGNMENT exp{
                     // 判斷array id是否存在 再判斷type是否相同
@@ -244,27 +268,34 @@ simple:             IDENTIFIERS ASSIGNMENT exp{
                             printf("type is not equal\n");
                             return 1;
                         }
+                        //id is array, index over range or not
+                        if(atoi($3.value->c_str())>=$1.size)
+                        {
+                            printf("ID is not array or index over range\n");
+                            return 1;
+                        }
+
                         $$ = getdata($6.name->c_str()); 
                     }else{
                         printf("id doesn't exist\n");
                         return 1;
                     }
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 |   PRINT exp{
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 |   PRINTLN exp{
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 |   READ IDENTIFIERS{
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 |   RETURN{
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 |   RETURN exp{
-                    Trace("Reducing to simple\n");
+                    // Trace("Reducing to simple\n");
                 }
                 ;
                 // 遇到大括號 就開新的scope
@@ -272,27 +303,27 @@ compound:           LEFT_BRACKETS{start_scope("compound");} contents RIGHT_BRACK
                 {
                     // 大括號結束 關閉
                     end_scope();
-                    Trace("Reducing to compound\n");
+                    // Trace("Reducing to compound\n");
                 }
                 ;
 
 conditional:        IF LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES compound ELSE compound{
-                    Trace("Reducing to conditional\n");
+                    // Trace("Reducing to conditional\n");
                 }
                 |   IF LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES compound
                 {
-                    Trace("Reducing to conditional\n");
+                    // Trace("Reducing to conditional\n");
                 }
                 ;
                     // 這邊值注意一下 再我的設定之上 分號一定要
 loop:               FOR LEFT_PARENTHESES statement SEMICOLON bool_exp SEMICOLON statement RIGHT_PARENTHESES compound{
-                    Trace("Reducing to loop\n");
+                    // Trace("Reducing to loop\n");
                 }
                 ;
 procedure_invocation:
                     GO func_exp
                 {
-                    Trace("Reducing to procedure_invocation\n");
+                    // Trace("Reducing to procedure_invocation\n");
                 }
                 ;
 
@@ -303,13 +334,13 @@ procedure_invocation:
                 }
                 ;*/
 declaration:        constant{
-                    Trace("Reducing to declaration\n");
+                    // Trace("Reducing to declaration\n");
                 }
                 |   variable{
-                    Trace("Reducing to declaration\n");
+                    // Trace("Reducing to declaration\n");
                 }
                 |   array{
-                    Trace("Reducing to declaration\n");
+                    // Trace("Reducing to declaration\n");
                 }
                 ;
 //have to be change when you are doing type verify
@@ -323,7 +354,7 @@ constant_exp:
                         printf("error! not a const value\n");
                         return 1;
                     }
-                    Trace("Reducing to exp\n");
+                    // Trace("Reducing to exp\n");
                 }
                 ;
 
@@ -332,14 +363,14 @@ constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp{
                     
                     if (current_lookup($2.name->c_str())==-1){
                         // 沒有就存值
-                        idtuple temp($2.name->c_str(), nowscope, $4.value->c_str(), $4.type, CONST_STYLE, 1);
+                        idtuple temp($2.name->c_str(), nowscope, $4.value->c_str(), $4.type, CONST_STYLE, -1);
                         insert($2.name->c_str(),temp);
                     }else{
                         printf("id redefine\n");
                         return 1;
                     }
 
-                    Trace("Reducing to constant\n");
+                    // Trace("Reducing to constant\n");
                 }
                 ;
                     // var 要被宣告時利用current_lookup function 去看這個id在當前scope裡是否已經被宣告過了
@@ -347,23 +378,23 @@ constant:           CONST IDENTIFIERS ASSIGNMENT constant_exp{
 variable:           VAR IDENTIFIERS type ASSIGNMENT constant_exp{
                         // 沒有就存值
                     if (current_lookup($2.name->c_str())==-1 && $3==$5.type){
-                        idtuple temp($2.name->c_str(), nowscope, $5.value->c_str(), $3, VAR_STYLE, 1);
+                        idtuple temp($2.name->c_str(), nowscope, $5.value->c_str(), $3, VAR_STYLE, -1);
                         insert($2.name->c_str(),temp);
                     }else{
                         printf("id redefine or wrong type assign\n");
                         return 1;
                     }
-                    Trace("Reducing to variable\n");
+                    // Trace("Reducing to variable\n");
                 }
                 |   VAR IDENTIFIERS type{
                     if (current_lookup($2.name->c_str())==-1){
-                        idtuple temp($2.name->c_str(), nowscope, "0", $3, VAR_STYLE, 1);
+                        idtuple temp($2.name->c_str(), nowscope, "0", $3, VAR_STYLE, -1);
                         insert($2.name->c_str(),temp);
                     }else{
                         printf("id redefine\n");
                         return 1;
                     }
-                    Trace("Reducing to variable\n");
+                    // Trace("Reducing to variable\n");
                 }
                 ;
 
@@ -378,7 +409,7 @@ array:              VAR IDENTIFIERS LEFT_SQUAREBRACKETS int_exp RIGHT_SQUAREBRAC
                         printf("array redefine\n");
                         return 1;
                     }
-                    Trace("Reducing to array\n");
+                    // Trace("Reducing to array\n");
                 }
                 ;
 // 布林型態的運算
@@ -509,39 +540,51 @@ bool_exp:           LEFT_PARENTHESES bool_exp RIGHT_PARENTHESES{$$=$2;}
                     }
                 |   BOOLEANCONSTANTS_TRUE{
                     $$=$1;
-                    Trace("Reducing to bool_exp\n");
+                    // Trace("Reducing to bool_exp\n");
                 }
                 |   BOOLEANCONSTANTS_FALSE{
                     $$=$1;
-                    Trace("Reducing to bool_exp\n");
+                    // Trace("Reducing to bool_exp\n");
                 }
                 |   IDENTIFIERS{
-                    $1 = getdata($1.name->c_str());
-                    $$=$1;
-                    Trace("Reducing to bool_exp\n");
+                    if (lookup($1.name->c_str())==1)
+                    {
+                        $1 = getdata($1.name->c_str());
+                        $$=$1;
+                    }else{
+                        printf("id does not exist\n");
+                        return 1;
+                    }
+                    // Trace("Reducing to bool_exp\n");
                 }
                 ;
 // 所有可以用來表示數字的nonterminal
 number:             INTEGERCONSTANTS{
                     $$=$1;
-                    Trace("Reducing to number\n");
+                    // Trace("Reducing to number\n");
                 }
                 |   REALCONSTANTS{
                     $$=$1;
-                    Trace("Reducing to number\n");
+                    // Trace("Reducing to number\n");
                 }
                 |   func_exp{
                     $$=$1;
-                    Trace("Reducing to number\n");
+                    // Trace("Reducing to number\n");
                 }
                 |   array_exp{
                     $$=$1;
-                    Trace("Reducing to number\n");
+                    // Trace("Reducing to number\n");
                 }
                 |   IDENTIFIERS{
-                    $1 = getdata($1.name->c_str());
-                    $$=$1;
-                    Trace("Reducing to number\n");
+                    if (lookup($1.name->c_str())==1)
+                    {
+                        $1 = getdata($1.name->c_str());
+                        $$=$1;
+                    }else{
+                        printf("id does not exist\n");
+                        return 1;
+                    }
+                    // Trace("Reducing to number\n");
                 }
                 ;
 // 數字型態的運算
@@ -584,16 +627,16 @@ num_exp:            LEFT_PARENTHESES num_exp RIGHT_PARENTHESES{$$=$2;}
                     }
                 |   ARITHMETIC_ADDITION num_exp %prec POSITIVE{
                         $$ = $2;
-                        Trace("Reducing to num_exp\n");
+                        // Trace("Reducing to num_exp\n");
                 }
                 |   ARITHMETIC_SUBTRACTION num_exp %prec NEGATIVE{
                         $$ = $2;
                         $$.value = new string(to_string(-1.0*atof($2.value->c_str())));
-                        Trace("Reducing to num_exp\n");
+                        // Trace("Reducing to num_exp\n");
                 }
                 |   number{
                         $$=$1;
-                        Trace("Reducing to num_exp\n");
+                        // Trace("Reducing to num_exp\n");
                 }
                 ;
 // int型態的運算
@@ -634,18 +677,18 @@ int_exp:            LEFT_PARENTHESES int_exp RIGHT_PARENTHESES{$$=$2;}
                             return 1;
                         }
                     }
-                |   /*ARITHMETIC_ADDITION int_exp %prec POSITIVE{
+                /*|   ARITHMETIC_ADDITION int_exp %prec POSITIVE{
                         $$=$2;
                         Trace("Reducing to int_exp\n");
                     }
                 |   ARITHMETIC_SUBTRACTION int_exp %prec NEGATIVE{
                         $$=$2;
                         $$.value = new string(to_string(-atoi($2.value->c_str())));
-                        Trace("Reducing to int_exp\n");
-                }
-                |*/   INTEGERCONSTANTS{
+                        // Trace("Reducing to int_exp\n");
+                }*/
+                |   INTEGERCONSTANTS{
                         $$=$1;
-                        Trace("Reducing to int_exp\n");
+                        // Trace("Reducing to int_exp\n");
                 }
                 ;
 
@@ -659,11 +702,14 @@ array_exp:          IDENTIFIERS LEFT_SQUAREBRACKETS exp RIGHT_SQUAREBRACKETS{
                                 printf("index must be int\n");
                                 return 1;
                             }
+                            if ($1.size){
+                                
+                            }
                         }else{
                             printf("array id doesn't exist\n");
                             return 1;
                         }
-                    Trace("Reducing to array_exp\n");
+                    // Trace("Reducing to array_exp\n");
                 }
                 ;
 // func的exp
@@ -676,7 +722,7 @@ func_exp:           IDENTIFIERS LEFT_PARENTHESES parameters RIGHT_PARENTHESES{
                             printf("func id doesn't exist\n");
                             return 1;
                         }
-                    Trace("Reducing to func_exp\n");
+                    // Trace("Reducing to func_exp\n");
                 }
                 ;
 parameters:         parameter
@@ -685,7 +731,7 @@ parameters:         parameter
 parameter:          exp COMMA parameter
                 |   exp
                 {
-                    Trace("Reducing to parameters\n");
+                    // Trace("Reducing to parameters\n");
                 }
                 ;
 %%
@@ -708,6 +754,6 @@ int main(int argc, char **argv)
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror("Parsing error !");     /* syntax error */
-    // dump();
+    dump();
 }
 

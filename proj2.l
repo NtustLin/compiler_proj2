@@ -38,7 +38,7 @@
 			scope = "0";
 			type = 0;
 			style = 0;
-			size = 1;
+			size = -1;
 		}
 		idtuple(std::string myname, std::string myscope, std::string myvalue, int mytype, int mystyle, int mysize){
 			name = myname;
@@ -93,6 +93,9 @@
 				return id;
 			}
 			void dump(){
+				printf("id value type style size\n");
+				printf("type 0:UNSURE_TYPE 1:INT_TYPE 2:REAL_TYPE 3:STRING_TYPE 4:BOOL_TYPE 5:VOID_TYPE\n");
+				printf("style 0:UNSURE_STYLE 1:FUNC_STYLE 2:ARRAY_STYLE 3:VAR_STYLE 4:CONST_STYLE\n");
 				for (std::map<int,idtuple>::iterator it=intTables.begin(); it!=intTables.end(); ++it){
     				std::cout << it->first << " => " << it->second.getname()<<" "<< it->second.getvalue() <<" "<< it->second.gettype() <<" "<< it->second.getstyle()<<" "<< it->second.getsize() << '\n';
 				}
@@ -244,7 +247,7 @@ realConstants {decimal}|{exponent}
 	its_T.value = new std::string("1");;
 	its_T.type = BOOL_TYPE;
 	its_T.style = CONST_STYLE;
-	its_T.size = 1;
+	its_T.size = -1;
 	yylval.myinfo=its_T;
 	return token( BOOLEANCONSTANTS_TRUE);%}
 {booleanConstants_false} %{
@@ -253,7 +256,7 @@ realConstants {decimal}|{exponent}
 	its_F.value = new std::string("0");;
 	its_F.type = BOOL_TYPE;
 	its_F.style = CONST_STYLE;
-	its_F.size = 1;
+	its_F.size = -1;
 	yylval.myinfo=its_F;
 	return token( BOOLEANCONSTANTS_FALSE);%}
 
@@ -291,7 +294,7 @@ realConstants {decimal}|{exponent}
 	its_ID.value = new std::string("0");
 	its_ID.type = UNSURE_TYPE;
 	its_ID.style = UNSURE_STYLE;
-	its_ID.size = 1;
+	its_ID.size = -1;
 	yylval.myinfo=its_ID;
 	return tokenIdentifiers( IDENTIFIERS);%}
 {integerConstants} %{
@@ -300,7 +303,7 @@ realConstants {decimal}|{exponent}
 	its_INT.value = new std::string(yytext);
 	its_INT.type = INT_TYPE;
 	its_INT.style = CONST_STYLE;
-	its_INT.size = 1;
+	its_INT.size = -1;
 	yylval.myinfo=its_INT;
 	return token( INTEGERCONSTANTS);%}
 {realConstants} %{
@@ -309,7 +312,7 @@ realConstants {decimal}|{exponent}
 	its_REAL.value = new std::string(yytext);
 	its_REAL.type = REAL_TYPE;
 	its_REAL.style = CONST_STYLE;
-	its_REAL.size = 1;
+	its_REAL.size = -1;
 	yylval.myinfo=its_REAL;
 	return token( REALCONSTANTS);%}
 
@@ -326,7 +329,7 @@ realConstants {decimal}|{exponent}
 				its_STRING.value = new std::string(yytext);
 				its_STRING.type = STRING_TYPE;
 				its_STRING.style = CONST_STYLE;
-				its_STRING.size = 1;
+				its_STRING.size = -1;
 				yylval.myinfo=its_STRING;
 				return STRINGCONSTANTS;
 			}
