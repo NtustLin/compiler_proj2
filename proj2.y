@@ -71,6 +71,17 @@
             // std::cout << it->first << " => " << it->second.getname() << '\n';
         }
     }
+    void dump_arglist(){
+        std::list<int>* temp = new std::list<int>;
+        for (std::map<string,list<int>*>::iterator it=func_arg.begin(); it!=func_arg.end(); ++it){
+            temp = func_arg[it->first];
+            cout<<it->first<<" =>";
+            for(std::list<int>::iterator it=temp->begin(); it!=temp->end(); ++it){
+                cout<<' '<<*it;
+            }
+            cout<<endl;
+        }
+    }
 
 %}
 %union {
@@ -83,8 +94,8 @@
         int style;
         int type;
         int size;
-        std::list<int>* argstype;
     }myinfo;
+    std::list<int>* argstype;
 }
 /* tokens */
 %token BOOL BREAK CASE CONST CONTINUE DEFAULT ELSE FALSE FOR FUNC GO IF IMPORT INT NIL PRINT PRINTLN REAL RETURN STRING STRUCT SWITCH TRUE TYPE VAR VOID WHILE READ
@@ -103,6 +114,7 @@
 %nonassoc POSITIVE
 %nonassoc NEGATIVE
 
+%type<argstype> formal_arguments
 %type<val> type formal_argument 
 %type<myinfo> exp number int_exp bool_exp num_exp func_exp array_exp constant variable constant_exp declaration simple
 
@@ -138,6 +150,7 @@ function:           FUNC type IDENTIFIERS LEFT_PARENTHESES{
                     }
                     start_scope("function");} 
                     formal_arguments RIGHT_PARENTHESES LEFT_BRACKETS contents RIGHT_BRACKETS{
+                    func_arg[$3.name->c_str()] = $6;
                     // function 要被宣告時利用current_lookup function 去看這個id在當前scope裡是否已經被宣告過了
                     
                     // Trace("Reducing to function\n");
@@ -167,10 +180,17 @@ type:               BOOL{
                 }
                 ;
 
-formal_arguments:   formal_argument COMMA formal_arguments
-                |   formal_argument
+formal_arguments:   formal_argument COMMA formal_arguments{
+                    $3->push_front($1);
+                    $$=$3;
+                }
+                |   formal_argument{
+                    $$->push_front($1);
+                }
                 |
                 {
+                    std::list<int>* temp = new std::list<int>;
+                    $$ = temp;
                     // Trace("Reducing to formal_arguments\n");
                 }
                 ;
@@ -755,5 +775,6 @@ int main(int argc, char **argv)
     if (yyparse() == 1)                 /* parsing */
         yyerror("Parsing error !");     /* syntax error */
     dump();
+    dump_arglist();
 }
 
